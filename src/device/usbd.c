@@ -502,6 +502,7 @@ void tud_task_ext(uint32_t timeout_ms, bool in_isr)
     {
       case DCD_EVENT_BUS_RESET:
         TU_LOG_USBD(": %s Speed\r\n", tu_str_speed[event.bus_reset.speed]);
+        if (tud_reset_cb) tud_reset_cb();
         usbd_reset(event.rhport);
         _usbd_dev.speed = event.bus_reset.speed;
       break;
