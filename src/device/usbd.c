@@ -380,6 +380,28 @@ bool tud_connect(void)
   return true;
 }
 
+static void configuration_reset(uint8_t rhport);
+void tud_unmount(void)
+{
+    // close all non-control endpoints, cancel all pending transfers if any
+    (void) osal_mutex_lock(_usbd_mutex, OSAL_TIMEOUT_WAIT_FOREVER);
+    
+    // Init device controller driver
+    dcd_int_disable(_usbd_rhport);
+    dcd_init(_usbd_rhport);
+    
+    dcd_edpt_close_all(_usbd_rhport);
+    // close all drivers and current configured state except bus speed
+    uint8_t const speed = _usbd_dev.speed;
+    configuration_reset(_usbd_rhport);
+    usbd_control_reset();
+    _usbd_dev.speed = speed; // restore speed
+    
+    dcd_int_enable(_usbd_rhport);
+    
+    (void) osal_mutex_unlock(_usbd_mutex);
+}
+
 //--------------------------------------------------------------------+
 // USBD Task
 //--------------------------------------------------------------------+
@@ -486,6 +508,9 @@ void tud_task_ext(uint32_t timeout_ms, bool in_isr)
 
   // Skip if stack is not initialized
   if ( !tud_inited() ) return;
+  
+  // Reset Queue
+  osal_queue_reset(_usbd_q);
 
   // Loop until there is no more events in the queue
   while (1)

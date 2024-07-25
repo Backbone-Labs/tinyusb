@@ -96,6 +96,9 @@ bool tud_disconnect(void);
 // Return false on unsupported MCUs
 bool tud_connect(void);
 
+// Unmount device clearing configurations
+void tud_unmount(void);
+
 // Carry out Data and Status stage of control transfer
 // - If len = 0, it is equivalent to sending status only
 // - If len > wLength : it will be truncated
