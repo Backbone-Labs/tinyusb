@@ -388,13 +388,23 @@ void tud_unmount(void)
     
     // Init device controller driver
     dcd_int_disable(_usbd_rhport);
+    
+    uint8_t const speed = _usbd_dev.speed;
+    
+    // Close all endpoints
+    dcd_edpt_close_all(_usbd_rhport);
+    
+    usbd_control_reset();
+    
+    // close all drivers and current configured state except bus speed
+    configuration_reset(_usbd_rhport);
+    
+    // Clear event in queue
+    osal_queue_reset(_usbd_q);
+    
+    // Reset DCD
     dcd_init(_usbd_rhport);
     
-    dcd_edpt_close_all(_usbd_rhport);
-    // close all drivers and current configured state except bus speed
-    uint8_t const speed = _usbd_dev.speed;
-    configuration_reset(_usbd_rhport);
-    usbd_control_reset();
     _usbd_dev.speed = speed; // restore speed
     
     dcd_int_enable(_usbd_rhport);
@@ -508,9 +518,6 @@ void tud_task_ext(uint32_t timeout_ms, bool in_isr)
 
   // Skip if stack is not initialized
   if ( !tud_inited() ) return;
-  
-  // Reset Queue
-  osal_queue_reset(_usbd_q);
 
   // Loop until there is no more events in the queue
   while (1)
@@ -1265,6 +1272,7 @@ bool usbd_edpt_release(uint8_t rhport, uint8_t ep_addr)
 
 bool usbd_edpt_xfer(uint8_t rhport, uint8_t ep_addr, uint8_t * buffer, uint16_t total_bytes)
 {
+  bool xfer_result = true;
   rhport = _usbd_rhport;
 
   uint8_t const epnum = tu_edpt_number(ep_addr);
@@ -1283,7 +1291,7 @@ bool usbd_edpt_xfer(uint8_t rhport, uint8_t ep_addr, uint8_t * buffer, uint16_t 
   _usbd_dev.ep_status[epnum][dir].busy = 1;
 
   (void) osal_mutex_lock(_usbd_mutex, OSAL_TIMEOUT_WAIT_FOREVER);
-  bool xfer_result = dcd_edpt_xfer(rhport, ep_addr, buffer, total_bytes);
+  xfer_result = dcd_edpt_xfer(rhport, ep_addr, buffer, total_bytes);
   (void) osal_mutex_unlock(_usbd_mutex);
 
   if (xfer_result)
