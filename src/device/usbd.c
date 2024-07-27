@@ -1272,7 +1272,6 @@ bool usbd_edpt_release(uint8_t rhport, uint8_t ep_addr)
 
 bool usbd_edpt_xfer(uint8_t rhport, uint8_t ep_addr, uint8_t * buffer, uint16_t total_bytes)
 {
-  bool xfer_result = true;
   rhport = _usbd_rhport;
 
   uint8_t const epnum = tu_edpt_number(ep_addr);
@@ -1291,7 +1290,7 @@ bool usbd_edpt_xfer(uint8_t rhport, uint8_t ep_addr, uint8_t * buffer, uint16_t 
   _usbd_dev.ep_status[epnum][dir].busy = 1;
 
   (void) osal_mutex_lock(_usbd_mutex, OSAL_TIMEOUT_WAIT_FOREVER);
-  xfer_result = dcd_edpt_xfer(rhport, ep_addr, buffer, total_bytes);
+  bool xfer_result = dcd_edpt_xfer(rhport, ep_addr, buffer, total_bytes);
   (void) osal_mutex_unlock(_usbd_mutex);
 
   if (xfer_result)
