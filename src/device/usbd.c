@@ -380,6 +380,38 @@ bool tud_connect(void)
   return true;
 }
 
+static void configuration_reset(uint8_t rhport);
+void tud_unmount(void)
+{
+    // close all non-control endpoints, cancel all pending transfers if any
+    (void) osal_mutex_lock(_usbd_mutex, OSAL_TIMEOUT_WAIT_FOREVER);
+    
+    // Init device controller driver
+    dcd_int_disable(_usbd_rhport);
+    
+    uint8_t const speed = _usbd_dev.speed;
+    
+    // Close all endpoints
+    dcd_edpt_close_all(_usbd_rhport);
+    
+    usbd_control_reset();
+    
+    // close all drivers and current configured state except bus speed
+    configuration_reset(_usbd_rhport);
+    
+    // Clear event in queue
+    osal_queue_reset(_usbd_q);
+    
+    // Reset DCD
+    dcd_init(_usbd_rhport);
+    
+    _usbd_dev.speed = speed; // restore speed
+    
+    dcd_int_enable(_usbd_rhport);
+    
+    (void) osal_mutex_unlock(_usbd_mutex);
+}
+
 //--------------------------------------------------------------------+
 // USBD Task
 //--------------------------------------------------------------------+

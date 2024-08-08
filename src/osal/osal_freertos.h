@@ -208,6 +208,11 @@ TU_ATTR_ALWAYS_INLINE static inline bool osal_queue_empty(osal_queue_t qhdl)
   return uxQueueMessagesWaiting(qhdl) == 0;
 }
 
+TU_ATTR_ALWAYS_INLINE static inline void osal_queue_reset(osal_queue_t qhdl)
+{
+  xQueueReset(qhdl);
+}
+
 #ifdef __cplusplus
  }
 #endif
