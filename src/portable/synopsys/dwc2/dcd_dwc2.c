@@ -643,6 +643,7 @@ static void dcd_edpt_counters_reset(uint8_t rhport)
   dwc2_ep_counters[rhport].active_out = 0;
 }
 
+#if DWC2_ENDPOINT_COUNTING
 // Check if IN/OUT endpoint counter is available before opening endpoint
 // return values:
 // true : Endpoint available, value increased by one
@@ -686,6 +687,7 @@ static bool dcd_edpt_counter_release(uint8_t rhport, uint8_t dir)
   }
   return true;
 }
+#endif // DWC2_ENDPOINT_COUNTING
 #endif // OPT_MCU_ESP32S2, OPT_MCU_ESP32S3, OPT_MCU_ESP32P4
 
 bool dcd_edpt_open (uint8_t rhport, tusb_desc_endpoint_t const * desc_edpt)
@@ -828,6 +830,10 @@ bool dcd_edpt_xfer (uint8_t rhport, uint8_t ep_addr, uint8_t * buffer, uint16_t 
   }
   else
   {
+    // Max size of 0 indicates the endpoint was closed.
+    // Must have been a rare timing collision, abort the transfer
+    if (xfer->max_size == 0)
+      return false;
     uint16_t num_packets = (total_bytes / xfer->max_size);
     uint16_t const short_packet_size = total_bytes % xfer->max_size;
 
