@@ -829,7 +829,7 @@ bool dcd_edpt_xfer (uint8_t rhport, uint8_t ep_addr, uint8_t * buffer, uint16_t 
   else
   {
     // If Tiny USB task is stopped during transfer, this transfer process will be interrupted.
-    if (!xfer->max_size) return true;
+    if (!xfer->max_size) return false;
     
     uint16_t num_packets = (total_bytes / xfer->max_size);
     uint16_t const short_packet_size = total_bytes % xfer->max_size;
@@ -862,7 +862,7 @@ bool dcd_edpt_xfer_fifo (uint8_t rhport, uint8_t ep_addr, tu_fifo_t * ff, uint16
   xfer->total_len   = total_bytes;
 
   // If Tiny USB task is stopped during transfer, this transfer process will be interrupted.
-  if (!xfer->max_size) return true;
+  if (!xfer->max_size) return false;
   
   uint16_t num_packets = (total_bytes / xfer->max_size);
   uint16_t const short_packet_size = total_bytes % xfer->max_size;
