@@ -109,6 +109,9 @@ bool tud_disconnect(void);
 // Return false on unsupported MCUs
 bool tud_connect(void);
 
+// Unmount device clearing configurations
+void tud_unmount(void);
+
 // Enable or disable the Start Of Frame callback support
 void tud_sof_cb_enable(bool en);
 
@@ -164,6 +167,9 @@ void tud_suspend_cb(bool remote_wakeup_en);
 // Invoked when usb bus is resumed
 void tud_resume_cb(void);
 
+// Invoked when a bus reset occurs
+void tud_reset_cb(void);
+
 // Invoked when there is a new usb event, which need to be processed by tud_task()/tud_task_ext()
 void tud_event_hook_cb(uint8_t rhport, uint32_t eventid, bool in_isr);
 
@@ -172,6 +178,9 @@ void tud_sof_cb(uint32_t frame_count);
 
 // Invoked when received control request with VENDOR TYPE
 bool tud_vendor_control_xfer_cb(uint8_t rhport, uint8_t stage, tusb_control_request_t const * request);
+
+// Invoked when setup packet received
+void tud_setup_received(tusb_control_request_t const * setup);
 
 //--------------------------------------------------------------------+
 // Binary Device Object Store (BOS) Descriptor Templates

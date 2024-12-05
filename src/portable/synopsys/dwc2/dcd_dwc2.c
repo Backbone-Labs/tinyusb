@@ -589,6 +589,7 @@ bool dcd_edpt_xfer(uint8_t rhport, uint8_t ep_addr, uint8_t* buffer, uint16_t to
   if (epnum == 0) {
     _dcd_data.ep0_pending[dir] = total_bytes;
   }
+  if (!xfer->max_size) return false;
 
   // Schedule packets to be sent within interrupt
   edpt_schedule_packets(rhport, epnum, dir);
@@ -611,6 +612,8 @@ bool dcd_edpt_xfer_fifo(uint8_t rhport, uint8_t ep_addr, tu_fifo_t* ff, uint16_t
   xfer->buffer = NULL;
   xfer->ff = ff;
   xfer->total_len = total_bytes;
+
+  if (!xfer->max_size) return false;
 
   // Schedule packets to be sent within interrupt
   // TODO xfer fifo may only available for slave mode

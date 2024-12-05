@@ -79,9 +79,15 @@ TU_ATTR_WEAK void tud_suspend_cb(bool remote_wakeup_en) {
 TU_ATTR_WEAK void tud_resume_cb(void) {
 }
 
+TU_ATTR_WEAK void tud_reset_cb(void) {
+}
+
 TU_ATTR_WEAK bool tud_vendor_control_xfer_cb(uint8_t rhport, uint8_t stage, tusb_control_request_t const* request) {
   (void) rhport; (void) stage; (void) request;
   return false;
+}
+
+TU_ATTR_WEAK void tud_setup_received(tusb_control_request_t const * setup) {
 }
 
 TU_ATTR_WEAK bool dcd_deinit(uint8_t rhport) {
@@ -445,6 +451,39 @@ bool tud_connect(void) {
   return true;
 }
 
+static void configuration_reset(uint8_t rhport);
+void tud_unmount(void)
+{
+    // close all non-control endpoints, cancel all pending transfers if any
+    (void) osal_mutex_lock(_usbd_mutex, OSAL_TIMEOUT_WAIT_FOREVER);
+    
+    // Init device controller driver
+    dcd_int_disable(_usbd_rhport);
+    
+    uint8_t const speed = _usbd_dev.speed;
+    
+    // Close all endpoints
+    dcd_edpt_close_all(_usbd_rhport);
+    
+    usbd_control_reset();
+    
+    // close all drivers and current configured state except bus speed
+    configuration_reset(_usbd_rhport);
+    
+    // Clear event in queue
+    osal_queue_reset(_usbd_q);
+    
+    // Reset DCD
+    // NOTE: 2nd argument is unused but this is risky to leave long term
+    dcd_init(_usbd_rhport, NULL);
+    
+    _usbd_dev.speed = speed; // restore speed
+    
+    dcd_int_enable(_usbd_rhport);
+    
+    (void) osal_mutex_unlock(_usbd_mutex);
+}
+
 void tud_sof_cb_enable(bool en) {
   usbd_sof_enable(_usbd_rhport, SOF_CONSUMER_USER, en);
 }
@@ -624,6 +663,7 @@ void tud_task_ext(uint32_t timeout_ms, bool in_isr) {
         _usbd_dev.ep_status[0][TUSB_DIR_OUT].claimed = 0;
         _usbd_dev.ep_status[0][TUSB_DIR_IN].busy = 0;
         _usbd_dev.ep_status[0][TUSB_DIR_IN].claimed = 0;
+        tud_setup_received(&event.setup_received);
 
         // Process control request
         if (!process_control_request(event.rhport, &event.setup_received)) {
@@ -1337,7 +1377,11 @@ bool usbd_edpt_xfer(uint8_t rhport, uint8_t ep_addr, uint8_t* buffer, uint16_t t
   // could return and USBD task can preempt and clear the busy
   _usbd_dev.ep_status[epnum][dir].busy = 1;
 
-  if (dcd_edpt_xfer(rhport, ep_addr, buffer, total_bytes)) {
+  (void) osal_mutex_lock(_usbd_mutex, OSAL_TIMEOUT_WAIT_FOREVER);
+  bool xfer_result = dcd_edpt_xfer(rhport, ep_addr, buffer, total_bytes);
+  (void) osal_mutex_unlock(_usbd_mutex);
+
+  if (xfer_result) {
     return true;
   } else {
     // DCD error, mark endpoint as ready to allow next transfer
@@ -1368,7 +1412,11 @@ bool usbd_edpt_xfer_fifo(uint8_t rhport, uint8_t ep_addr, tu_fifo_t* ff, uint16_
   // and usbd task can preempt and clear the busy
   _usbd_dev.ep_status[epnum][dir].busy = 1;
 
-  if (dcd_edpt_xfer_fifo(rhport, ep_addr, ff, total_bytes)) {
+  (void) osal_mutex_lock(_usbd_mutex, OSAL_TIMEOUT_WAIT_FOREVER);
+  bool xfer_result = dcd_edpt_xfer_fifo(rhport, ep_addr, ff, total_bytes);
+  (void) osal_mutex_unlock(_usbd_mutex);
+
+  if (xfer_result) {
     TU_LOG_USBD("OK\r\n");
     return true;
   } else {

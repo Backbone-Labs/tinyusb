@@ -55,7 +55,7 @@ typedef struct {
 } hidd_interface_t;
 
 typedef struct {
-  TUD_EPBUF_DEF(ctrl , CFG_TUD_HID_EP_BUFSIZE);
+  TUD_EPBUF_DEF(ctrl , 260); // 4 + 256 for max debug report size
   TUD_EPBUF_DEF(epin , CFG_TUD_HID_EP_BUFSIZE);
   TUD_EPBUF_DEF(epout, CFG_TUD_HID_EP_BUFSIZE);
 } hidd_epbuf_t;
@@ -269,6 +269,7 @@ bool hidd_control_xfer_cb(uint8_t rhport, uint8_t stage, tusb_control_request_t 
   TU_VERIFY(hid_itf < CFG_TUD_HID);
   hidd_interface_t *p_hid = &_hidd_itf[hid_itf];
   hidd_epbuf_t *p_epbuf = &_hidd_epbuf[hid_itf];
+  uint16_t max_ctrl_xfer = sizeof(p_epbuf->ctrl);
 
   if (request->bmRequestType_bit.type == TUSB_REQ_TYPE_STANDARD) {
     //------------- STD Request -------------//
@@ -295,7 +296,7 @@ bool hidd_control_xfer_cb(uint8_t rhport, uint8_t stage, tusb_control_request_t 
           uint8_t const report_id = tu_u16_low(request->wValue);
 
           uint8_t* report_buf = p_epbuf->ctrl;
-          uint16_t req_len = tu_min16(request->wLength, CFG_TUD_HID_EP_BUFSIZE);
+          uint16_t req_len = tu_min16(request->wLength, max_ctrl_xfer);
           uint16_t xferlen = 0;
 
           // If host request a specific Report ID, add ID to as 1 byte of response
@@ -314,14 +315,14 @@ bool hidd_control_xfer_cb(uint8_t rhport, uint8_t stage, tusb_control_request_t 
 
       case HID_REQ_CONTROL_SET_REPORT:
         if (stage == CONTROL_STAGE_SETUP) {
-          TU_VERIFY(request->wLength <= CFG_TUD_HID_EP_BUFSIZE);
+          TU_VERIFY(request->wLength <= max_ctrl_xfer);
           tud_control_xfer(rhport, request, p_epbuf->ctrl, request->wLength);
         } else if (stage == CONTROL_STAGE_ACK) {
           uint8_t const report_type = tu_u16_high(request->wValue);
           uint8_t const report_id = tu_u16_low(request->wValue);
 
           uint8_t const* report_buf = p_epbuf->ctrl;
-          uint16_t report_len = tu_min16(request->wLength, CFG_TUD_HID_EP_BUFSIZE);
+          uint16_t report_len = tu_min16(request->wLength, max_ctrl_xfer);
 
           // If host request a specific Report ID, extract report ID in buffer before invoking callback
           if ((report_id != HID_REPORT_TYPE_INVALID) && (report_len > 1) && (report_id == report_buf[0])) {
