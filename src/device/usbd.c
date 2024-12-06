@@ -466,7 +466,7 @@ bool tud_init (uint8_t rhport)
   return true;
 }
 
-bool tud_teardown (uint8_t rhport)
+bool tud_teardown(uint8_t rhport)
 {
   // skip if nothing to teardown
   if ( !tud_inited() ) return true;
@@ -475,6 +475,12 @@ bool tud_teardown (uint8_t rhport)
 
   // Disable interrupt
   dcd_int_disable(rhport);
+
+  // Close all endpoints
+  dcd_edpt_close_all(_usbd_rhport);
+
+  // Reset DCD
+  dcd_init(_usbd_rhport);
 
   // Disable class devices
   for (uint8_t i = 0; i < TOTAL_DRIVER_COUNT; i++)
