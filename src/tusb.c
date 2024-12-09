@@ -119,6 +119,34 @@ bool tusb_inited(void) {
   return ret;
 }
 
+bool tusb_deinit(void) {
+  bool ret = false;
+
+  #if CFG_TUD_ENABLED && defined(TUD_OPT_RHPORT)
+  ret = ret || tud_deinit(TUD_OPT_RHPORT);
+  #endif
+
+#if CFG_TUH_ENABLED && defined(TUH_OPT_RHPORT)
+  ret = ret || tuh_deinit(TUH_OPT_RHPORT);
+#endif
+  return ret;
+}
+
+// Teardown device/host stack
+bool tusb_teardown(void) {
+  bool ret = false;
+
+  #if CFG_TUD_ENABLED && defined(TUD_OPT_RHPORT)
+  // teardown device stack CFG_TUSB_RHPORTx_MODE must be defined
+  ret = ret || tud_teardown(TUD_OPT_RHPORT);
+  #endif
+  #if CFG_TUH_ENABLED && defined(TUH_OPT_RHPORT)
+  // teardown host stack CFG_TUSB_RHPORTx_MODE must be defined
+  // not implemented
+  #endif
+  return ret;
+}
+
 void tusb_int_handler(uint8_t rhport, bool in_isr) {
   TU_VERIFY(rhport < TUP_USBIP_CONTROLLER_NUM,);
 

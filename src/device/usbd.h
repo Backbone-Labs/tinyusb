@@ -52,11 +52,14 @@ TU_ATTR_ALWAYS_INLINE static inline bool tud_init (uint8_t rhport) {
   return tud_rhport_init(rhport, &rh_init);
 }
 
+// Check if device stack is already initialized
+bool tud_inited(void);
+
 // Deinit device stack on roothub port
 bool tud_deinit(uint8_t rhport);
 
-// Check if device stack is already initialized
-bool tud_inited(void);
+// Teardown device stack
+bool tud_teardown(uint8_t rhport);
 
 // Task function should be called in main/rtos loop, extended version of tud_task()
 // - timeout_ms: millisecond to wait, zero = no wait, 0xFFFFFFFF = wait forever
