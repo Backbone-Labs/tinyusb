@@ -119,6 +119,20 @@ bool tusb_inited(void) {
   return ret;
 }
 
+bool tusb_deinit(void) {
+  bool ret = false;
+
+  #if CFG_TUD_ENABLED
+  ret = ret || tud_deinit(0);
+  #endif
+
+  #if CFG_TUH_ENABLED
+  ret = ret || tuh_deinit(1);
+  #endif
+
+  return ret;
+}
+
 void tusb_int_handler(uint8_t rhport, bool in_isr) {
   TU_VERIFY(rhport < TUP_USBIP_CONTROLLER_NUM,);
 
