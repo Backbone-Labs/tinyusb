@@ -119,6 +119,20 @@ bool tusb_inited(void) {
   return ret;
 }
 
+bool tusb_deinit(void) {
+  bool ret = false;
+
+  #if CFG_TUD_ENABLED
+  ret = ret || tud_deinit(0);
+  #endif
+
+  #if CFG_TUH_ENABLED
+  ret = ret || tuh_deinit(1);
+  #endif
+
+  return ret;
+}
+
 void tusb_int_handler(uint8_t rhport, bool in_isr) {
   TU_VERIFY(rhport < TUP_USBIP_CONTROLLER_NUM,);
 
@@ -369,7 +383,7 @@ uint32_t tu_edpt_stream_write_xfer(uint8_t hwid, tu_edpt_stream_t* s) {
   uint16_t const count = tu_fifo_read_n(&s->ff, s->ep_buf, s->ep_bufsize);
 
   if (count) {
-    TU_ASSERT(stream_xfer(hwid, s, count), 0);
+    TU_VERIFY(stream_xfer(hwid, s, count), 0);
     return count;
   } else {
     // Release endpoint since we don't make any transfer
@@ -387,7 +401,7 @@ uint32_t tu_edpt_stream_write(uint8_t hwid, tu_edpt_stream_t* s, void const* buf
     TU_VERIFY(stream_claim(hwid, s), 0);
     const uint32_t xact_len = tu_min32(bufsize, s->ep_bufsize);
     memcpy(s->ep_buf, buffer, xact_len);
-    TU_ASSERT(stream_xfer(hwid, s, (uint16_t) xact_len), 0);
+    if (!stream_xfer(hwid, s, (uint16_t) xact_len)) return 0;
     return xact_len;
   } else {
     const uint16_t ret = tu_fifo_write_n(&s->ff, buffer, (uint16_t) bufsize);

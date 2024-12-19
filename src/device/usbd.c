@@ -553,6 +553,7 @@ bool tud_deinit(uint8_t rhport) {
   // Deinit device controller driver
   dcd_int_disable(rhport);
   dcd_disconnect(rhport);
+  dcd_edpt_close_all(rhport);
   dcd_deinit(rhport);
 
   // Deinit class drivers
@@ -563,6 +564,10 @@ bool tud_deinit(uint8_t rhport) {
       driver->deinit();
     }
   }
+
+  tu_varclr(&_usbd_dev);
+  memset(_usbd_dev.itf2drv, DRVID_INVALID, sizeof(_usbd_dev.itf2drv)); // invalid mapping
+  memset(_usbd_dev.ep2drv, DRVID_INVALID, sizeof(_usbd_dev.ep2drv)); // invalid mapping
 
   // Deinit device queue & task
   osal_queue_delete(_usbd_q);
