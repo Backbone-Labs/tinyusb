@@ -575,6 +575,8 @@ bool tud_deinit(uint8_t rhport) {
 
 #if OSAL_MUTEX_REQUIRED
   // TODO make sure there is no task waiting on this mutex
+  // make sure there is no task waiting on this mutex
+  (void) osal_mutex_lock(_usbd_mutex, OSAL_TIMEOUT_WAIT_FOREVER);
   osal_mutex_delete(_usbd_mutex);
   _usbd_mutex = NULL;
 #endif
@@ -1377,6 +1379,8 @@ bool usbd_edpt_xfer(uint8_t rhport, uint8_t ep_addr, uint8_t* buffer, uint16_t t
 
   // Attempt to transfer on a busy endpoint, sound like an race condition !
   TU_ASSERT(_usbd_dev.ep_status[epnum][dir].busy == 0);
+  // If mutex has already been deleted, return
+  TU_VERIFY(_usbd_mutex);
 
   // Set busy first since the actual transfer can be complete before dcd_edpt_xfer()
   // could return and USBD task can preempt and clear the busy
