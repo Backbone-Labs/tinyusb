@@ -574,7 +574,6 @@ bool tud_deinit(uint8_t rhport) {
   _usbd_q = NULL;
 
 #if OSAL_MUTEX_REQUIRED
-  // TODO make sure there is no task waiting on this mutex
   // make sure there is no task waiting on this mutex
   (void) osal_mutex_lock(_usbd_mutex, OSAL_TIMEOUT_WAIT_FOREVER);
   osal_mutex_delete(_usbd_mutex);
