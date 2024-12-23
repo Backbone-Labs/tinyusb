@@ -151,6 +151,9 @@ bool tusb_rhport_init(uint8_t rhport, const tusb_rhport_init_t* rh_init);
 // Check if stack is initialized
 bool tusb_inited(void);
 
+// Release the stack
+bool tusb_deinit(void);
+
 // Called to handle usb interrupt/event. tusb_init(rhport, role) must be called before
 void tusb_int_handler(uint8_t rhport, bool in_isr);
 
