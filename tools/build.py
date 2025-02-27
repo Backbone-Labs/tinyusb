@@ -90,7 +90,7 @@ def cmake_board(board, toolchain, build_flags_on):
     if len(build_flags_on) > 0:
         build_flags =  ' '.join(f'-D{flag}=1' for flag in build_flags_on)
         build_flags = f'-DCFLAGS_CLI="{build_flags}"'
-        build_dir += '-' + '-'.join(build_flags_on)
+        build_dir += '-f1_' + '_'.join(build_flags_on)
 
     family = find_family(board)
     if family == 'espressif':
@@ -109,7 +109,15 @@ def cmake_board(board, toolchain, build_flags_on):
         rcmd = run_cmd(f'cmake examples -B {build_dir} -G "Ninja" -DBOARD={board} -DCMAKE_BUILD_TYPE=MinSizeRel '
                        f'-DTOOLCHAIN={toolchain} {build_flags}')
         if rcmd.returncode == 0:
-            rcmd = run_cmd(f"cmake --build {build_dir}")
+            cmd = f"cmake --build {build_dir}"
+            # circleci docker return $nproc as 36 core, limit parallel according to resource class. Required for IAR, also prevent crashed/killed by docker
+            if os.getenv('CIRCLECI'):
+                resource_class = { 'small': 1, 'medium': 2, 'medium+': 3, 'large': 4 }
+                for rc in resource_class:
+                    if rc in os.getenv('CIRCLE_JOB'):
+                        cmd += f' --parallel {resource_class[rc]}'
+                        break
+            rcmd = run_cmd(cmd)
         ret[0 if rcmd.returncode == 0 else 1] += 1
 
     example = 'all'

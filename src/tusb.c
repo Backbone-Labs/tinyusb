@@ -272,6 +272,10 @@ uint16_t tu_desc_get_interface_total_len(tusb_desc_interface_t const* desc_itf, 
     p_desc = tu_desc_next(p_desc);
 
     while (len < max_len) {
+      if (tu_desc_len(p_desc) == 0) {
+        // Escape infinite loop
+        break;
+      }
       // return on IAD regardless of itf count
       if (tu_desc_type(p_desc) == TUSB_DESC_INTERFACE_ASSOCIATION) {
         return len;
@@ -383,7 +387,7 @@ uint32_t tu_edpt_stream_write_xfer(uint8_t hwid, tu_edpt_stream_t* s) {
   uint16_t const count = tu_fifo_read_n(&s->ff, s->ep_buf, s->ep_bufsize);
 
   if (count) {
-    TU_VERIFY(stream_xfer(hwid, s, count), 0);
+    TU_ASSERT(stream_xfer(hwid, s, count), 0);
     return count;
   } else {
     // Release endpoint since we don't make any transfer
@@ -401,7 +405,7 @@ uint32_t tu_edpt_stream_write(uint8_t hwid, tu_edpt_stream_t* s, void const* buf
     TU_VERIFY(stream_claim(hwid, s), 0);
     const uint32_t xact_len = tu_min32(bufsize, s->ep_bufsize);
     memcpy(s->ep_buf, buffer, xact_len);
-    if (!stream_xfer(hwid, s, (uint16_t) xact_len)) return 0;
+    TU_ASSERT(stream_xfer(hwid, s, (uint16_t) xact_len), 0);
     return xact_len;
   } else {
     const uint16_t ret = tu_fifo_write_n(&s->ff, buffer, (uint16_t) bufsize);
